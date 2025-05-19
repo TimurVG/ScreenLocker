@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    tools:context=".MainActivity">
+    android:padding="16dp">
 
     <Switch
-        android:id="@+id/switchLock"
+        android:id="@+id/switch_lock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Блокировка экрана" />
-
+        android:text="Блокировка экрана"
+        android:textSize="18sp"
+        app:thumbTint="@android:color/white"
+        app:trackTint="@android:color/darker_gray"/>
 </LinearLayout>
