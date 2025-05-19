@@ -1,72 +1,82 @@
 class ScreenLockerService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
+    private var isLocked = false
+    private val gestureDetector: GestureDetectorCompat
+    private val circleGestureListener = CircleGestureListener()
+
+    init {
+        gestureDetector = GestureDetectorCompat(applicationContext, object : GestureDetector.SimpleOnGestureListener())
+    }
 
     override fun onCreate() {
         super.onCreate()
-
-        // Создаем уведомление для foreground service
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "screen_locker_channel",
-                "Screen Locker",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
-
-            val notification = Notification.Builder(this, "screen_locker_channel")
-                .setContentTitle("Screen Locker")
-                .setContentText("Running in background")
-                .setSmallIcon(R.drawable.ic_notification)
-                .build()
-
-            startForeground(1, notification)
-        }
-
         setupOverlay()
+        createNotificationChannel()
     }
 
     private fun setupOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = View(this).apply {
-            setBackgroundColor(0x00000000)
+        overlayView = LockOverlayView(this).apply {
+            setOnTouchListener { _, event ->
+                if (gestureDetector.onTouchEvent(event)) {
+                    return@setOnTouchListener true
+                }
+                circleGestureListener.handleEvent(event)
+                true
+            }
         }
 
-        val params = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                PixelFormat.TRANSLUCENT
-            )
-        } else {
-            WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                PixelFormat.TRANSLUCENT
-            )
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) TYPE_APPLICATION_OVERLAY else TYPE_SYSTEM_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
+        )
+        windowManager.addView(overlayView, params)
+    }
+
+    inner class CircleGestureListener {
+        private val circles = mutableListOf<Circle>()
+        private var lastCircleTime = 0L
+
+        fun handleEvent(event: MotionEvent) {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    circles.clear()
+                    circles.add(Circle(event.x, event.y))
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    circles.last().addPoint(event.x, event.y)
+                    checkForUnlockGesture()
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (System.currentTimeMillis() - lastCircleTime < 500) return
+                    if (circles.size == 1 && circles[0].isComplete() && !isLocked) {
+                        lockScreen()
+                    }
+                }
+            }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            !Settings.canDrawOverlays(this)) {
-            stopSelf()
-        } else {
-            windowManager.addView(overlayView, params)
+        private fun checkForUnlockGesture() {
+            if (circles.size >= 2 && circles.all { it.isComplete() } && isLocked) {
+                unlockScreen()
+            }
+        }
+
+        private fun lockScreen() {
+            isLocked = true
+            (overlayView as LockOverlayView).setLockState(true)
+        }
+
+        private fun unlockScreen() {
+            isLocked = false
+            (overlayView as LockOverlayView).setLockState(false)
+            circles.clear()
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (::windowManager.isInitialized && ::overlayView.isInitialized) {
-            windowManager.removeView(overlayView)
-        }
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
+    // ... остальные методы сервиса (onDestroy, onBind и т.д.)
 }
