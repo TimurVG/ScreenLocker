@@ -1,82 +1,99 @@
+package com.timurg.screenlocker
+
+import android.app.Service
+import android.content.Intent
+import android.graphics.PixelFormat
+import android.os.IBinder
+import android.os.Vibrator
+import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowManager
+import android.view.WindowManager.LayoutParams
+
 class ScreenLockerService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
-    private var isLocked = false
-    private val gestureDetector: GestureDetectorCompat
-    private val circleGestureListener = CircleGestureListener()
+    private lateinit var vibrator: Vibrator
 
-    init {
-        gestureDetector = GestureDetectorCompat(applicationContext, object : GestureDetector.SimpleOnGestureListener())
-    }
+    // Переменные для детекции жестов
+    private var circlesCount = 0
+    private var lastCircleTime = 0L
+    private var startX = 0f
+    private var startY = 0f
+
+    override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        vibrator.vibrate(50) // Короткая вибрация при включении
+
         setupOverlay()
-        createNotificationChannel()
     }
 
     private fun setupOverlay() {
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = LockOverlayView(this).apply {
-            setOnTouchListener { _, event ->
-                if (gestureDetector.onTouchEvent(event)) {
-                    return@setOnTouchListener true
-                }
-                circleGestureListener.handleEvent(event)
-                true
-            }
+        overlayView = View(this).apply {
+            setOnTouchListener { _, event -> handleTouch(event) }
         }
 
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) TYPE_APPLICATION_OVERLAY else TYPE_SYSTEM_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+        val params = LayoutParams(
+            LayoutParams.MATCH_PARENT,
+            LayoutParams.MATCH_PARENT,
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                LayoutParams.TYPE_SYSTEM_OVERLAY
+            },
+            LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+        }
+
         windowManager.addView(overlayView, params)
     }
 
-    inner class CircleGestureListener {
-        private val circles = mutableListOf<Circle>()
-        private var lastCircleTime = 0L
-
-        fun handleEvent(event: MotionEvent) {
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    circles.clear()
-                    circles.add(Circle(event.x, event.y))
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    circles.last().addPoint(event.x, event.y)
-                    checkForUnlockGesture()
-                }
-                MotionEvent.ACTION_UP -> {
-                    if (System.currentTimeMillis() - lastCircleTime < 500) return
-                    if (circles.size == 1 && circles[0].isComplete() && !isLocked) {
-                        lockScreen()
-                    }
+    private fun handleTouch(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                startX = event.x
+                startY = event.y
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (isCircleGesture(startX, startY, event.x, event.y)) {
+                    handleCircleGesture()
                 }
             }
         }
-
-        private fun checkForUnlockGesture() {
-            if (circles.size >= 2 && circles.all { it.isComplete() } && isLocked) {
-                unlockScreen()
-            }
-        }
-
-        private fun lockScreen() {
-            isLocked = true
-            (overlayView as LockOverlayView).setLockState(true)
-        }
-
-        private fun unlockScreen() {
-            isLocked = false
-            (overlayView as LockOverlayView).setLockState(false)
-            circles.clear()
-        }
+        return true // Блокируем все касания
     }
 
-    // ... остальные методы сервиса (onDestroy, onBind и т.д.)
+    private fun isCircleGesture(startX: Float, startY: Float, endX: Float, endY: Float): Boolean {
+        val dx = endX - startX
+        val dy = endY - startY
+        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+        return distance > 100f // Упрощенная детекция круга
+    }
+
+    private fun handleCircleGesture() {
+        val now = System.currentTimeMillis()
+        if (now - lastCircleTime < 500) {
+            if (++circlesCount >= 2) {
+                vibrator.vibrate(200) // Длинная вибрация при разблокировке
+                stopSelf()
+            }
+        } else {
+            circlesCount = 1
+        }
+        lastCircleTime = now
+    }
+
+    override fun onDestroy() {
+        windowManager.removeView(overlayView)
+        super.onDestroy()
+    }
 }
