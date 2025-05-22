@@ -1,8 +1,8 @@
-package com.timurg.screenlocker
+package com.example.screenlocker
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.timurg.screenlocker.databinding.ActivityLockScreenBinding
+import com.example.screenlocker.databinding.ActivityLockScreenBinding
 
 class LockScreenActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLockScreenBinding
@@ -11,7 +11,5 @@ class LockScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLockScreenBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Ваша логика блокировки экрана
     }
 }
