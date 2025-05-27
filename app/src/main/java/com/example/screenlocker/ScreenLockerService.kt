@@ -2,32 +2,48 @@ package com.example.screenlocker
 
 import android.app.Service
 import android.content.Intent
+import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.WindowManager
-import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+import android.view.View
+import android.content.Context
 
 class ScreenLockerService : Service() {
-
-    private lateinit var overlayView: LockOverlayView
+    private lateinit var windowManager: WindowManager
+    private lateinit var lockView: View
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
 
-        overlayView = LockOverlayView(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !Settings.canDrawOverlays(this)) {
+            stopSelf()
+            return
+        }
+
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        lockView = View(this).apply {
+            setBackgroundColor(0x00000000) // Прозрачный цвет
+        }
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            android.graphics.PixelFormat.TRANSLUCENT
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            PixelFormat.TRANSLUCENT
         )
 
         try {
-            val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-            windowManager.addView(overlayView, params)
+            windowManager.addView(lockView, params)
         } catch (e: Exception) {
             e.printStackTrace()
             stopSelf()
@@ -35,19 +51,13 @@ class ScreenLockerService : Service() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        if (::overlayView.isInitialized) {
+        if (::windowManager.isInitialized && ::lockView.isInitialized) {
             try {
-                (getSystemService(WINDOW_SERVICE) as WindowManager).removeView(overlayView)
+                windowManager.removeView(lockView)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
-    }
-
-    companion object {
-        fun start(context: android.content.Context) {
-            context.startService(Intent(context, ScreenLockerService::class.java))
-        }
+        super.onDestroy()
     }
 }

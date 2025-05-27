@@ -8,9 +8,9 @@ import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import com.example.screenlocker.databinding.ActivityMainBinding
 
-class MainActivity : AppCompatActivity(), LockOverlayView.UnlockListener {
+class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-    private val OVERLAY_PERMISSION_REQ_CODE = 1234
+    private val OVERLAY_PERMISSION_CODE = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,38 +19,44 @@ class MainActivity : AppCompatActivity(), LockOverlayView.UnlockListener {
 
         binding.lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                checkOverlayPermission()
+                if (checkOverlayPermission()) {
+                    startLockService()
+                }
             } else {
                 stopService(Intent(this, ScreenLockerService::class.java))
             }
         }
     }
 
-    private fun checkOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+    private fun startLockService() {
+        startService(Intent(this, ScreenLockerService::class.java))
+        moveTaskToBack(true)
+    }
+
+    private fun checkOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !Settings.canDrawOverlays(this)) {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:$packageName")
             )
-            startActivityForResult(intent, OVERLAY_PERMISSION_REQ_CODE)
+            startActivityForResult(intent, OVERLAY_PERMISSION_CODE)
+            false
         } else {
-            ScreenLockerService.start(this)
+            true
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == OVERLAY_PERMISSION_REQ_CODE) {
-            if (Settings.canDrawOverlays(this)) {
-                ScreenLockerService.start(this)
+        if (requestCode == OVERLAY_PERMISSION_CODE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                Settings.canDrawOverlays(this)) {
+                binding.lockSwitch.isChecked = true
+                startLockService()
             } else {
                 binding.lockSwitch.isChecked = false
             }
         }
-    }
-
-    override fun onUnlock() {
-        stopService(Intent(this, ScreenLockerService::class.java))
-        binding.lockSwitch.isChecked = false
     }
 }
