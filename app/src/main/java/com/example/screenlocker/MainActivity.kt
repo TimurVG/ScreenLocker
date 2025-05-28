@@ -5,32 +5,31 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Switch
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
-    private val OVERLAY_PERMISSION_CODE = 1001
+    private lateinit var lockSwitch: Switch
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
-        binding.lockSwitch.setOnCheckedChangeListener { _, isChecked ->
+        lockSwitch = findViewById(R.id.lockSwitch)
+
+        lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 if (checkOverlayPermission()) {
-                    startLockService()
+                    startService(Intent(this, ScreenLockerService::class.java))
+                    moveTaskToBack(true)
+                } else {
+                    lockSwitch.isChecked = false
                 }
             } else {
                 stopService(Intent(this, ScreenLockerService::class.java))
             }
         }
-    }
-
-    private fun startLockService() {
-        startService(Intent(this, ScreenLockerService::class.java))
-        moveTaskToBack(true)
     }
 
     private fun checkOverlayPermission(): Boolean {
@@ -40,23 +39,11 @@ class MainActivity : AppCompatActivity() {
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:$packageName")
             )
-            startActivityForResult(intent, OVERLAY_PERMISSION_CODE)
+            startActivity(intent)
+            Toast.makeText(this, "Включите разрешение 'Отображать поверх других приложений'", Toast.LENGTH_LONG).show()
             false
         } else {
             true
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == OVERLAY_PERMISSION_CODE) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                Settings.canDrawOverlays(this)) {
-                binding.lockSwitch.isChecked = true
-                startLockService()
-            } else {
-                binding.lockSwitch.isChecked = false
-            }
         }
     }
 }
