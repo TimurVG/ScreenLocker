@@ -5,26 +5,27 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.Switch
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var lockSwitch: Switch
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        lockSwitch = findViewById(R.id.lockSwitch)
-
-        lockSwitch.setOnCheckedChangeListener { _, isChecked ->
+        binding.lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                if (checkOverlayPermission()) {
-                    startService(Intent(this, ScreenLockerService::class.java))
-                    moveTaskToBack(true)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                    !Settings.canDrawOverlays(this)) {
+                    requestOverlayPermission()
+                    binding.lockSwitch.isChecked = false
                 } else {
-                    lockSwitch.isChecked = false
+                    startService(Intent(this, ScreenLockerService::class.java).apply {
+                        action = "START"
+                    })
                 }
             } else {
                 stopService(Intent(this, ScreenLockerService::class.java))
@@ -32,18 +33,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkOverlayPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            !Settings.canDrawOverlays(this)) {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
-            Toast.makeText(this, "Включите разрешение 'Отображать поверх других приложений'", Toast.LENGTH_LONG).show()
+    private fun requestOverlayPermission() {
+        startActivity(Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:$packageName")
+        ))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Обновляем состояние переключателя при возвращении в приложение
+        binding.lockSwitch.isChecked = isServiceRunning()
+    }
+
+    private fun isServiceRunning(): Boolean {
+        // Простая проверка работы сервиса
+        return try {
+            val manager = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+            manager.getRunningServices(Integer.MAX_VALUE)
+                .any { it.service.className == ScreenLockerService::class.java.name }
+        } catch (e: Exception) {
             false
-        } else {
-            true
         }
     }
 }
