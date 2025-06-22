@@ -1,8 +1,8 @@
 package com.timurvg.screenlocker
 
 import android.content.Intent
-import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
 import com.timurvg.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -14,10 +14,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.switchOnOff.setOnCheckedChangeListener { _, isChecked ->
+            val serviceIntent = Intent(this, LockService::class.java)
             if (isChecked) {
-                startService(Intent(this, LockService::class.java))
+                startService(serviceIntent)
             } else {
-                stopService(Intent(this, LockService::class.java))
+                stopService(serviceIntent)
             }
         }
     }

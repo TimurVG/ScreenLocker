@@ -1,16 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.example.screenlocker"
+    namespace = "com.timurvg.screenlocker"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.screenlocker"
-        minSdk = 21
+        applicationId = "com.timurvg.screenlocker"
+        minSdk = 24  // Минимум API 24 для TYPE_APPLICATION_OVERLAY
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -35,25 +34,28 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
-        compose = true
+        viewBinding = true  // Включаем ViewBinding
     }
 }
 
 dependencies {
-
+    // Базовые зависимости Android
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.material)
+
+    // Для работы с вибрацией
+    implementation(libs.androidx.core)
+
+    // Для Foreground Service
+    implementation(libs.androidx.lifecycle.service)
+
+    // Для обработки тапов
+    implementation(libs.androidx.activity.ktx)
+
+    // Тестирование
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
