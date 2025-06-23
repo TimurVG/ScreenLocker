@@ -1,16 +1,16 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
-    namespace = "com.timurvg.screenlocker"
-    compileSdk = 35
+    namespace = "com.timurg.vglocker"
+    compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.timurvg.screenlocker"
-        minSdk = 24  // Минимум API 24 для TYPE_APPLICATION_OVERLAY
-        targetSdk = 35
+        applicationId = "com.timurg.vglocker"
+        minSdk = 21
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -27,35 +27,29 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        viewBinding = true  // Включаем ViewBinding
+        jvmTarget = "1.8"
     }
 }
 
 dependencies {
-    // Базовые зависимости Android
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.material)
+    // Базовые зависимости AndroidX
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
-    // Для работы с вибрацией
-    implementation(libs.androidx.core)
+    // Для работы с сервисами
+    implementation("androidx.lifecycle:lifecycle-service:2.7.0")
 
-    // Для Foreground Service
-    implementation(libs.androidx.lifecycle.service)
+    // Для активности
+    implementation("androidx.activity:activity-ktx:1.8.2")
 
-    // Для обработки тапов
-    implementation(libs.androidx.activity.ktx)
-
-    // Тестирование
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    // Тестовые зависимости
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 }
