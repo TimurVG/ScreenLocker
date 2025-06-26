@@ -1,8 +1,9 @@
-package com.example.screenlocker
+package com.timurvg.screenlocker
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.screenlocker.databinding.ActivityMainBinding
+import com.timurvg.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -14,11 +15,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.switchLock.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                // Включение блокировки экрана
-                startService(LockService.getIntent(this))
+                startForegroundService(Intent(this, LockService::class.java))
             } else {
-                // Выключение блокировки экрана
-                stopService(LockService.getIntent(this))
+                stopService(Intent(this, LockService::class.java))
             }
         }
     }
