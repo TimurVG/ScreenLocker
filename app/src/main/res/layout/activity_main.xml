@@ -4,13 +4,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:gravity="center"
     tools:context=".MainActivity">
 
     <Switch
-        android:id="@+id/switchLock"  <!-- Теперь ID совпадает с кодом -->
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_gravity="center_horizontal"
-    android:text="Screen Locker ON/OFF" />
+        android:id="@+id/switchLock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Screen Lock"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Double tap center to lock"
+        android:textSize="16sp"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Quad tap corner to unlock"
+        android:textSize="16sp"/>
+
 </LinearLayout>

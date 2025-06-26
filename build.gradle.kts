@@ -1,13 +1,10 @@
-android {
-    // ...
-    buildFeatures {
-        viewBinding = true
-    }
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id("com.android.application") version "8.3.2" apply false
+    id("com.android.library") version "8.3.2" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
 }
 
-dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.lifecycle:lifecycle-service:2.7.0")
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
 }

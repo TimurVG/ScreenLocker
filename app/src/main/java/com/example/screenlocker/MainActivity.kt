@@ -1,12 +1,8 @@
-package com.timurg.screenlocker
+package com.example.screenlocker
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
-import com.timurg.screenlocker.databinding.ActivityMainBinding
+import com.example.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -18,30 +14,12 @@ class MainActivity : AppCompatActivity() {
 
         binding.switchLock.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                if (canDrawOverlays()) {
-                    startService(Intent(this, LockService::class.java))
-                } else {
-                    requestOverlayPermission()
-                    binding.switchLock.isChecked = false
-                }
+                // Включение блокировки экрана
+                startService(LockService.getIntent(this))
             } else {
-                stopService(Intent(this, LockService::class.java))
+                // Выключение блокировки экрана
+                stopService(LockService.getIntent(this))
             }
-        }
-    }
-
-    private fun canDrawOverlays(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Settings.canDrawOverlays(this)
-        } else true
-    }
-
-    private fun requestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            startActivity(Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            ))
         }
     }
 }
