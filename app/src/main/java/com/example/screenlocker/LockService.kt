@@ -10,19 +10,18 @@ class LockService : Service() {
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: View
     private val vibrator by lazy { getSystemService(Vibrator::class.java) }
-    private var tapCount = 0
-    private var lastTapTime = 0L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         startForeground(1, NotificationHelper.createNotification(this))
+        setupOverlay()
     }
 
     private fun setupOverlay() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = View(this).apply { setBackgroundColor(Color.TRANSPARENT) }
+        overlayView = View(this).apply { setBackgroundColor(0x00000000) }
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -33,30 +32,21 @@ class LockService : Service() {
         ).apply { gravity = Gravity.CENTER }
 
         overlayView.setOnTouchListener { _, event ->
-            handleTouch(event.x, event.y)
+            handleTouch(event.x.toInt(), event.y.toInt())
             true
         }
 
         windowManager.addView(overlayView, params)
     }
 
-    private fun handleTouch(x: Float, y: Float) {
-        if (SystemClock.elapsedRealtime() - lastTapTime > 300) tapCount = 0
-        lastTapTime = SystemClock.elapsedRealtime()
-        tapCount++
+    private fun handleTouch(x: Int, y: Int) {
+        val centerX = overlayView.width / 2
+        val centerY = overlayView.height / 2
 
-        when {
-            // Блокировка (2 тапа в центр 300x300)
-            tapCount == 2 && x in (overlayView.width/2-150)..(overlayView.width/2+150)
-                    && y in (overlayView.height/2-150)..(overlayView.height/2+150) -> {
-                vibrator.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
-                setupOverlay()
-            }
-            // Разблокировка (4 тапа в угол 100x100)
-            tapCount >= 4 && x <= 100 && y <= 100 -> {
-                vibrator.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
-                stopSelf()
-            }
+        // Проверка зоны 300x300px в центре
+        if (x in (centerX - 150)..(centerX + 150) &&
+            y in (centerY - 150)..(centerY + 150)) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
         }
     }
 

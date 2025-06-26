@@ -3,9 +3,9 @@ package com.timurg.screenlocker
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import com.timurg.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -30,13 +30,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun canDrawOverlays() =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)
+    private fun canDrawOverlays(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else true
+    }
 
     private fun requestOverlayPermission() {
-        startActivity(Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            Uri.parse("package:$packageName")
-        ))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            startActivity(Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            ))
+        }
     }
 }
