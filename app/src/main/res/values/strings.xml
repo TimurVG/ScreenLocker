@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">ScreenLocker</string>
+    <string name="app_name">Screen Locker</string>
+    <string name="notification_title">Screen Locker Active</string>
+    <string name="notification_channel_name">Screen Locker</string>
+    <string name="notification_channel_description">Notifications for screen lock service</string>
+    <string name="switch_hint">Toggle to enable/disable screen locking</string>
 </resources>

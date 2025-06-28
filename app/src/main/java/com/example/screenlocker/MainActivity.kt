@@ -1,9 +1,14 @@
-package com.timurvg.screenlocker
+package com.example.screenlocker
 
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
-import com.timurvg.screenlocker.databinding.ActivityMainBinding
+import com.example.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -13,12 +18,55 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.switchLock.setOnCheckedChangeListener { _, isChecked ->
+        binding.lockSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                startForegroundService(Intent(this, LockService::class.java))
+                if (Settings.canDrawOverlays(this)) {
+                    startLockService()
+                } else {
+                    requestOverlayPermission()
+                    binding.lockSwitch.isChecked = false
+                }
             } else {
-                stopService(Intent(this, LockService::class.java))
+                stopLockService()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateSwitchState()
+    }
+
+    private fun updateSwitchState() {
+        binding.lockSwitch.isChecked = isServiceRunning() && Settings.canDrawOverlays(this)
+    }
+
+    private fun startLockService() {
+        Intent(this, LockService::class.java).apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(this)
+            } else {
+                startService(this)
+            }
+        }
+    }
+
+    private fun stopLockService() {
+        stopService(Intent(this, LockService::class.java))
+    }
+
+    private fun requestOverlayPermission() {
+        startActivity(
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+        )
+    }
+
+    private fun isServiceRunning(): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Integer.MAX_VALUE)
+            .any { it.service.className == LockService::class.java.name }
     }
 }
