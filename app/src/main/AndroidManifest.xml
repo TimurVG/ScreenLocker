@@ -27,6 +27,7 @@
         <service
             android:name=".LockService"
             android:enabled="true"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="systemAlert" />
     </application>
 </manifest>

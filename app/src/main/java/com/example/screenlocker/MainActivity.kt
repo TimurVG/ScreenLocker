@@ -9,6 +9,7 @@ import com.example.screenlocker.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private val overlayPermissionCode = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,23 +17,40 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnStart.setOnClickListener {
-            if (Settings.canDrawOverlays(this)) {
+            if (checkOverlayPermission()) {
                 startLockService()
-            } else {
-                requestOverlayPermission()
             }
         }
     }
 
-    private fun startLockService() {
-        startService(Intent(this, LockService::class.java))
-        finish()
+    private fun checkOverlayPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !Settings.canDrawOverlays(this)) {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+            startActivityForResult(intent, overlayPermissionCode)
+            false
+        } else {
+            true
+        }
     }
 
-    private fun requestOverlayPermission() {
-        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-            data = Uri.parse("package:$packageName")
-            startActivity(this)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == overlayPermissionCode && Settings.canDrawOverlays(this)) {
+            startLockService()
         }
+    }
+
+    private fun startLockService() {
+        val serviceIntent = Intent(this, LockService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
+        finish()
     }
 }
