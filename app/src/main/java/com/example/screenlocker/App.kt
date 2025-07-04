@@ -1,10 +1,10 @@
-package com.timurvg.screenlocker  // Замените на ваш пакет!
+package com.timurvg.screenlocker
 
 import android.app.Application
 
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
-        // Здесь можно добавить инициализацию, если потребуется
+        // Инициализация при необходимости
     }
 }

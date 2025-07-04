@@ -1,3 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ScreenLocker</string>
+    <!-- Основные строки -->
+    <string name="app_name">Экранный блокировщик</string>
+    <string name="notification_title">Блокировка активна</string>
+
+    <!-- Сообщения для пользователя -->
+    <string name="service_started">Служба запущена</string>
+    <string name="service_stopped">Служба остановлена</string>
+    <string name="overlay_permission_required">Требуется разрешение на поверх других окон</string>
+
+    <!-- Тексты кнопок -->
+    <string name="btn_enable">Включить</string>
+    <string name="btn_disable">Выключить</string>
+
+    <!-- Инструкции -->
+    <string name="instruction_lock">Двойное нажатие в центре для блокировки</string>
+    <string name="instruction_unlock">4 нажатия в угол для разблокировки</string>
+
+    <!-- Ошибки -->
+    <string name="error_vibrate">Ошибка вибрации</string>
+    <string name="error_overlay">Невозможно создать оверлей</string>
 </resources>

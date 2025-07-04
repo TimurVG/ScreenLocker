@@ -1,8 +1,9 @@
-package com.example.screenlocker.service
+package com.timurvg.screenlocker.service
 
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
@@ -10,37 +11,42 @@ import android.os.Vibrator
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
-import android.view.WindowManager.LayoutParams
 import androidx.core.app.NotificationCompat
-import com.example.screenlocker.R
+import com.timurvg.screenlocker.R
 
 class LockService : Service() {
     private val vibrator by lazy { getSystemService(Vibrator::class.java) }
     private var overlayView: View? = null
     private var tapCount = 0
+    private val centerZone = Rect().apply {
+        val size = 300
+        set((resources.displayMetrics.widthPixels - size) / 2,
+            (resources.displayMetrics.heightPixels - size) / 2,
+            (resources.displayMetrics.widthPixels + size) / 2,
+            (resources.displayMetrics.heightPixels + size) / 2)
+    }
     private val unlockZone = Rect(0, 0, 100, 100)
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
+            ACTION_START -> startForeground()
             ACTION_LOCK -> showOverlay()
             ACTION_UNLOCK -> hideOverlay()
             ACTION_STOP -> stopSelf()
-            else -> startForeground()
         }
         return START_STICKY
     }
 
     private fun startForeground() {
-        val channelId = "lock_channel"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            createNotificationChannel(channelId)
-        }
-        startForeground(1, NotificationCompat.Builder(this, channelId)
+        val notification = NotificationCompat.Builder(this, "lock_channel")
             .setContentTitle(getString(R.string.notification_title))
             .setSmallIcon(R.drawable.ic_lock)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build())
+            .build()
+
+        startForeground(1, notification)
     }
 
     private fun showOverlay() {
@@ -69,14 +75,22 @@ class LockService : Service() {
     }
 
     private fun handleTouch(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN &&
-            unlockZone.contains(event.x.toInt(), event.y.toInt())) {
-            if (++tapCount >= 4) {
-                hideOverlay()
-                tapCount = 0
+        when {
+            // Разблокировка (4 тапа в угол)
+            unlockZone.contains(event.x.toInt(), event.y.toInt()) -> {
+                if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 4) {
+                    hideOverlay()
+                    tapCount = 0
+                }
             }
-        } else {
-            tapCount = 0
+            // Блокировка (2 тапа в центр)
+            centerZone.contains(event.x.toInt(), event.y.toInt()) -> {
+                if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 2) {
+                    showOverlay()
+                    tapCount = 0
+                }
+            }
+            else -> tapCount = 0
         }
         return true
     }
@@ -104,6 +118,7 @@ class LockService : Service() {
     }
 
     companion object {
+        const val ACTION_START = "START"
         const val ACTION_LOCK = "LOCK"
         const val ACTION_UNLOCK = "UNLOCK"
         const val ACTION_STOP = "STOP"
