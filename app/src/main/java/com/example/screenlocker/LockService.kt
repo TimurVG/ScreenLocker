@@ -47,7 +47,11 @@ class LockService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        startForeground(1, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
+            startForeground(1, notification)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -93,14 +97,12 @@ class LockService : Service() {
 
     private fun handleTouch(event: MotionEvent): Boolean {
         when {
-            // Разблокировка (4 тапа в угол)
             unlockZone.contains(event.x.toInt(), event.y.toInt()) -> {
                 if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 4) {
                     hideOverlay()
                     tapCount = 0
                 }
             }
-            // Блокировка (2 тапа в центр)
             centerZone.contains(event.x.toInt(), event.y.toInt()) -> {
                 if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 2) {
                     showOverlay()
