@@ -16,9 +16,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         if (PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java).apply {
-                action = LockService.ACTION_START
-            })
+            startService(Intent(this, LockService::class.java))
         }
     }
 
@@ -26,9 +24,7 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PermissionHelper.OVERLAY_PERMISSION_CODE &&
             PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java).apply {
-                action = LockService.ACTION_START
-            })
+            startService(Intent(this, LockService::class.java))
         }
     }
 }
