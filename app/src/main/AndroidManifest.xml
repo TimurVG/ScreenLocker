@@ -2,33 +2,61 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Обязательные разрешения -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
 
+    <!-- Декларация функций для Google Play -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false"/>
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false"/>
+
     <application
         android:name=".App"
-        android:allowBackup="false"
+        android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScreenLocker"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="GoogleAppIndexingWarning"
+        tools:targetApi="31">
 
+        <!-- Основная Activity -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
 
+        <!-- Сервис блокировки -->
         <service
             android:name=".service.LockService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="systemAlert"/>
+            android:foregroundServiceType="location"
+            android:permission="android.permission.BIND_JOB_SERVICE"/>
+
+        <!-- Декларация политики рекламы (если используется AdMob) -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+
+        <!-- Поддержка новых версий Android -->
+        <meta-data
+            android:name="android.max_aspect"
+            android:value="2.1"/>
     </application>
 </manifest>

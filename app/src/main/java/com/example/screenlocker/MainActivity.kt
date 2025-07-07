@@ -1,11 +1,11 @@
-package com.example.screenlocker
+package com.timurvg.screenlocker
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.screenlocker.databinding.ActivityMainBinding
-import com.example.screenlocker.service.LockService
-import com.example.screenlocker.utils.PermissionHelper
+import com.timurvg.screenlocker.databinding.ActivityMainBinding
+import com.timurvg.screenlocker.service.LockService
+import com.timurvg.screenlocker.utils.PermissionHelper
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -16,7 +16,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         if (PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java))
+            startService(Intent(this, LockService::class.java).apply {
+                action = LockService.ACTION_START
+            })
         }
     }
 
@@ -24,7 +26,9 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == PermissionHelper.OVERLAY_PERMISSION_CODE &&
             PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java))
+            startService(Intent(this, LockService::class.java).apply {
+                action = LockService.ACTION_START
+            })
         }
     }
 }
