@@ -48,7 +48,7 @@ class LockService : Service() {
             .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+            startForeground(1, notification, FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
             startForeground(1, notification)
         }
@@ -140,5 +140,6 @@ class LockService : Service() {
     companion object {
         const val ACTION_LOCK = "LOCK"
         const val ACTION_UNLOCK = "UNLOCK"
+        const val FOREGROUND_SERVICE_TYPE_LOCATION = 8
     }
 }
