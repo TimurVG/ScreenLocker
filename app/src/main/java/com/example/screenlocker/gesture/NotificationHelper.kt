@@ -17,6 +17,7 @@ object NotificationHelper {
             .setContentText("Service is running")
             .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
             .build()
     }
 

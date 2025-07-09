@@ -16,6 +16,9 @@ class LockService : Service() {
     private var overlayView: View? = null
     private var windowManager: WindowManager? = null
     private var vibrator: Vibrator? = null
+    private var tapCount = 0
+    private var lastTapTime = 0L
+    private val tapDelay = 300L
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -27,7 +30,7 @@ class LockService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            "START" -> {}
+            "START" -> {} // Сервис запущен, ждем жеста
             "STOP" -> stopSelf()
             "LOCK" -> showOverlay()
             "UNLOCK" -> removeOverlay()
@@ -45,7 +48,7 @@ class LockService : Service() {
             }
         }
 
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager = getSystemService(WINDOW_MANAGER_SERVICE) as WindowManager
         windowManager?.addView(overlayView, WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -60,7 +63,47 @@ class LockService : Service() {
     }
 
     private fun handleTouch(x: Float, y: Float) {
-        // Реализацию жестов добавьте здесь
+        val currentTime = System.currentTimeMillis()
+
+        // Проверка двойного тапа в центре (300x300 px)
+        val centerX = resources.displayMetrics.widthPixels / 2
+        val centerY = resources.displayMetrics.heightPixels / 2
+        val centerArea = 300
+
+        if (x in (centerX - centerArea/2)..(centerX + centerArea/2) &&
+            y in (centerY - centerArea/2)..(centerY + centerArea/2)) {
+            if (currentTime - lastTapTime < tapDelay) {
+                tapCount++
+                if (tapCount == 2) {
+                    vibrate(300)
+                    showOverlay()
+                    tapCount = 0
+                }
+            } else {
+                tapCount = 1
+            }
+        }
+
+        // Проверка 4 тапов в углу (100x100 px)
+        val cornerArea = 100
+        if (x in 0..cornerArea && y in 0..cornerArea) {
+            if (currentTime - lastTapTime < tapDelay) {
+                tapCount++
+                if (tapCount == 4) {
+                    vibrate(300)
+                    removeOverlay()
+                    tapCount = 0
+                }
+            } else {
+                tapCount = 1
+            }
+        }
+
+        lastTapTime = currentTime
+    }
+
+    private fun vibrate(durationMs: Long) {
+        vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
     private fun removeOverlay() {
@@ -70,12 +113,9 @@ class LockService : Service() {
         }
     }
 
-    private fun vibrate(duration: Long) {
-        vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
-    }
-
     override fun onDestroy() {
         removeOverlay()
+        stopForeground(true)
         super.onDestroy()
     }
 }
