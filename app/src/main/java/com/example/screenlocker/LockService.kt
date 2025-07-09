@@ -18,7 +18,11 @@ class LockService : Service() {
     private var vibrator: Vibrator? = null
     private var tapCount = 0
     private var lastTapTime = 0L
+
+    // Константы согласно ТЗ
     private val tapDelay = 300L
+    private val centerAreaSize = 300
+    private val cornerAreaSize = 100
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -30,7 +34,7 @@ class LockService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            "START" -> {} // Сервис запущен, ждем жеста
+            "START" -> {} // Режим ожидания
             "STOP" -> stopSelf()
             "LOCK" -> showOverlay()
             "UNLOCK" -> removeOverlay()
@@ -49,7 +53,11 @@ class LockService : Service() {
         }
 
         windowManager = getSystemService(WINDOW_MANAGER_SERVICE) as WindowManager
-        windowManager?.addView(overlayView, WindowManager.LayoutParams(
+        windowManager?.addView(overlayView, createOverlayParams())
+    }
+
+    private fun createOverlayParams(): WindowManager.LayoutParams {
+        return WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -57,42 +65,29 @@ class LockService : Service() {
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
-            alpha = 0.05f
+            alpha = 0.05f // 5% прозрачность
             gravity = Gravity.TOP or Gravity.START
-        })
+        }
     }
 
     private fun handleTouch(x: Float, y: Float) {
         val currentTime = System.currentTimeMillis()
 
-        // Проверка двойного тапа в центре (300x300 px)
-        val centerX = resources.displayMetrics.widthPixels / 2
-        val centerY = resources.displayMetrics.heightPixels / 2
-        val centerArea = 300
-
-        if (x in (centerX - centerArea/2)..(centerX + centerArea/2) &&
-            y in (centerY - centerArea/2)..(centerY + centerArea/2)) {
+        // Центральная зона 300x300px (блокировка)
+        if (isInCenterArea(x, y)) {
             if (currentTime - lastTapTime < tapDelay) {
-                tapCount++
-                if (tapCount == 2) {
-                    vibrate(300)
-                    showOverlay()
-                    tapCount = 0
+                if (++tapCount == 2) {
+                    confirmAction(300) { showOverlay() }
                 }
             } else {
                 tapCount = 1
             }
         }
-
-        // Проверка 4 тапов в углу (100x100 px)
-        val cornerArea = 100
-        if (x in 0..cornerArea && y in 0..cornerArea) {
+        // Угловая зона 100x100px (разблокировка)
+        else if (isInCornerArea(x, y)) {
             if (currentTime - lastTapTime < tapDelay) {
-                tapCount++
-                if (tapCount == 4) {
-                    vibrate(300)
-                    removeOverlay()
-                    tapCount = 0
+                if (++tapCount == 4) {
+                    confirmAction(300) { removeOverlay() }
                 }
             } else {
                 tapCount = 1
@@ -100,6 +95,24 @@ class LockService : Service() {
         }
 
         lastTapTime = currentTime
+    }
+
+    private fun isInCenterArea(x: Float, y: Float): Boolean {
+        val centerX = resources.displayMetrics.widthPixels / 2
+        val centerY = resources.displayMetrics.heightPixels / 2
+        return x in (centerX - centerAreaSize/2)..(centerX + centerAreaSize/2) &&
+                y in (centerY - centerAreaSize/2)..(centerY + centerAreaSize/2)
+    }
+
+    private fun isInCornerArea(x: Float, y: Float): Boolean {
+        return x in 0f..cornerAreaSize.toFloat() &&
+                y in 0f..cornerAreaSize.toFloat()
+    }
+
+    private fun confirmAction(duration: Long, action: () -> Unit) {
+        vibrate(duration)
+        action()
+        tapCount = 0
     }
 
     private fun vibrate(durationMs: Long) {

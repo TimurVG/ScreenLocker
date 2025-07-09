@@ -8,13 +8,12 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 
 object NotificationHelper {
-    private const val CHANNEL_ID = "locker_channel"
+    private const val CHANNEL_ID = "screen_locker_channel"
 
     fun createNotification(context: Context): Notification {
         createChannel(context)
         return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Screen Locker")
-            .setContentText("Service is running")
+            .setContentTitle(context.getString(R.string.notification_title))
             .setSmallIcon(R.drawable.ic_notification)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
@@ -25,10 +24,10 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel(
                 CHANNEL_ID,
-                "Screen Locker",
+                context.getString(R.string.channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Screen lock service"
+                description = context.getString(R.string.channel_description)
                 context.getSystemService(NotificationManager::class.java)
                     .createNotificationChannel(this)
             }
