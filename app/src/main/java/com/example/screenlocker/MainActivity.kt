@@ -1,11 +1,9 @@
-package com.timurvg.screenlocker
+package com.timurvg.screenlockerfinal
 
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.timurvg.screenlocker.databinding.ActivityMainBinding
-import com.timurvg.screenlocker.service.LockService
-import com.timurvg.screenlocker.utils.PermissionHelper
+import com.timurvg.screenlockerfinal.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -15,16 +13,12 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        if (PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java))
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PermissionHelper.OVERLAY_PERMISSION_CODE &&
-            PermissionHelper.checkOverlayPermission(this)) {
-            startService(Intent(this, LockService::class.java))
+        binding.switchLock.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                startService(Intent(this, LockService::class.java))
+            } else {
+                stopService(Intent(this, LockService::class.java))
+            }
         }
     }
 }
