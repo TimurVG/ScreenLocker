@@ -1,3 +1,6 @@
-<string name="notification_title">Screen Locker активен</string>
-<string name="channel_name">Фоновый сервис</string>
-<string name="channel_description">Сервис блокировки экрана</string>
+<resources>
+    <string name="app_name">ScreenLocker</string>
+    <string name="notification_channel_name">Screen Locker Service</string>
+    <string name="notification_title">Screen Locker is running</string>
+    <string name="notification_text">Tap to open app</string>
+</resources>
