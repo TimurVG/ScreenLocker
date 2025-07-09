@@ -1,145 +1,81 @@
-package com.timurvg.screenlocker.service
+package com.timurvg.screenlocker
 
-import android.app.*
-import android.content.Context
+import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.graphics.Rect
-import android.os.*
-import android.view.*
-import androidx.annotation.RequiresApi
-import androidx.core.app.NotificationCompat
-import com.timurvg.screenlocker.R
+import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.WindowManager
+import androidx.core.content.ContextCompat
 
 class LockService : Service() {
-    private lateinit var windowManager: WindowManager
     private var overlayView: View? = null
-    private val vibrator by lazy { getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
-    private var tapCount = 0
-
-    private val centerZone by lazy {
-        val displayMetrics = resources.displayMetrics
-        val centerX = displayMetrics.widthPixels / 2
-        val centerY = displayMetrics.heightPixels / 2
-        Rect(centerX - 150, centerY - 150, centerX + 150, centerY + 150)
-    }
-
-    private val unlockZone by lazy {
-        Rect(0, 0, 100, 100)
-    }
+    private var windowManager: WindowManager? = null
+    private var vibrator: Vibrator? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator
+        startForeground(1, NotificationHelper.createNotification(this))
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_LOCK -> showOverlay()
-            ACTION_UNLOCK -> hideOverlay()
-            else -> startForegroundService()
+            "START" -> {}
+            "STOP" -> stopSelf()
+            "LOCK" -> showOverlay()
+            "UNLOCK" -> removeOverlay()
         }
         return START_STICKY
     }
 
-    private fun startForegroundService() {
-        val channelId = createNotificationChannel()
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(getString(R.string.notification_title))
-            .setSmallIcon(R.drawable.ic_lock)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, notification, FOREGROUND_SERVICE_TYPE_LOCATION)
-        } else {
-            startForeground(1, notification)
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun createNotificationChannel(): String {
-        val channelId = "lock_channel"
-        val channel = NotificationChannel(
-            channelId,
-            "Screen Locker",
-            NotificationManager.IMPORTANCE_LOW
-        )
-        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .createNotificationChannel(channel)
-        return channelId
-    }
-
     private fun showOverlay() {
-        if (overlayView == null) {
-            windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-            overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_lock, null).apply {
-                setOnTouchListener { _, event -> handleTouch(event) }
-            }
+        if (overlayView != null) return
 
-            val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                } else {
-                    WindowManager.LayoutParams.TYPE_PHONE
-                },
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-                PixelFormat.TRANSLUCENT
-            ).apply {
-                gravity = Gravity.TOP
-                alpha = 0.05f
+        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null).apply {
+            setOnTouchListener { _, event ->
+                handleTouch(event.x, event.y)
+                true
             }
-
-            windowManager.addView(overlayView, params)
-            vibrate(300)
         }
+
+        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        windowManager?.addView(overlayView, WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            alpha = 0.05f
+            gravity = Gravity.TOP or Gravity.START
+        })
     }
 
-    private fun handleTouch(event: MotionEvent): Boolean {
-        when {
-            unlockZone.contains(event.x.toInt(), event.y.toInt()) -> {
-                if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 4) {
-                    hideOverlay()
-                    tapCount = 0
-                }
-            }
-            centerZone.contains(event.x.toInt(), event.y.toInt()) -> {
-                if (event.action == MotionEvent.ACTION_DOWN && ++tapCount >= 2) {
-                    showOverlay()
-                    tapCount = 0
-                }
-            }
-            else -> tapCount = 0
-        }
-        return true
+    private fun handleTouch(x: Float, y: Float) {
+        // Реализацию жестов добавьте здесь
     }
 
-    private fun hideOverlay() {
+    private fun removeOverlay() {
         overlayView?.let {
-            windowManager.removeView(it)
+            windowManager?.removeView(it)
             overlayView = null
-            vibrate(300)
         }
     }
 
-    private fun vibrate(durationMs: Long) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(durationMs,
-                VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(durationMs)
-        }
+    private fun vibrate(duration: Long) {
+        vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 
     override fun onDestroy() {
-        hideOverlay()
+        removeOverlay()
         super.onDestroy()
-    }
-
-    companion object {
-        const val ACTION_LOCK = "LOCK"
-        const val ACTION_UNLOCK = "UNLOCK"
-        const val FOREGROUND_SERVICE_TYPE_LOCATION = 8
     }
 }
